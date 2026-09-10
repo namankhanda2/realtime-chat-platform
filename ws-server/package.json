@@ -1,0 +1,19 @@
+{
+  "name": "chat-ws-server",
+  "version": "1.0.0",
+  "description": "Socket.IO server for real-time chat — Redis pub/sub adapter",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
+    "dotenv": "^16.4.5",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.6.0",
+    "socket.io": "^4.7.5"
+  }
+}
