@@ -2,6 +2,7 @@
 set -e
 
 CONF=/etc/nginx/nginx.conf
+PORT="${PORT:-80}"
 
 if [ -n "$API_URL" ] && [ -n "$WS_URL" ]; then
   # ---------- PaaS mode (Render etc.): full upstream URLs ----------
@@ -16,7 +17,7 @@ http {
   gzip on;
   gzip_types text/plain text/css application/javascript application/json image/svg+xml;
   server {
-    listen 80;
+    listen $PORT;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
@@ -56,8 +57,8 @@ CONF
 else
   # ---------- docker-compose mode: internal service names ----------
   echo "nginx docker-compose mode -> api: ${API_HOST:-api}:5000  ws: ${WS_HOST:-ws}:5001"
-  API_HOST="${API_HOST:-api}" WS_HOST="${WS_HOST:-ws}" \
-    envsubst '\$API_HOST \$WS_HOST' < /etc/nginx/templates/nginx.conf > "$CONF"
+  API_HOST="${API_HOST:-api}" WS_HOST="${WS_HOST:-ws}" PORT="${PORT:-80}" \
+    envsubst '\$API_HOST \$WS_HOST \$PORT' < /etc/nginx/templates/nginx.conf > "$CONF"
 fi
 
 exec nginx -g "daemon off;"
