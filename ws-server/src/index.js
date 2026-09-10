@@ -1,7 +1,6 @@
 import "dotenv/config";
 import http from "http";
 import { Server } from "socket.io";
-import { createAdapter } from "@socket.io/redis-adapter";
 import jwt from "jsonwebtoken";
 
 import { connectDB } from "./config/db.js";
@@ -16,8 +15,19 @@ const io = new Server(server, {
   maxHttpBufferSize: 1e6,
 });
 
-// ---- use Redis adapter so messages fan out across WS instances ----------
-io.adapter(createAdapter(pubClient, subClient));
+// ---- Redis adapter --------------------------------------------
+// With redis pub/sub the Socket.IO rooms scale across WS instances.
+// Managed Redis providers (e.g. Upstash) do not support pub/sub —
+// a single WS instance is served by the in-memory adapter instead.
+// Set REDIS_ADAPTER=true in environments where Redis supports pub/sub.
+if (process.env.REDIS_ADAPTER === "true") {
+  await import("@socket.io/redis-adapter").then(async ({ createAdapter }) => {
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log("[ws] using Redis pub/sub adapter");
+  });
+} else {
+  console.log("[ws] using in-memory adapter (set REDIS_ADAPTER=true to enable pub/sub)");
+}
 
 // ---- socket auth: verify JWT from handshake ------------------------------
 io.use((socket, next) => {

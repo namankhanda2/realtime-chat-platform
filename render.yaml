@@ -1,0 +1,72 @@
+# Render Blueprint — deploys the 3 services from this repo.
+# Push-to-deploy: any push to main auto-deploys.
+#
+# Before use, fill in (in the Render dashboard after "New Blueprint"):
+#   - API/WS services: MONGODB_URI (Atlas), REDIS_URL (Upstash), shared JWT secrets
+#   - Client: API_URL / WS_URL → the public hostnames of the api/ws services
+#             (no rebuild needed: nginx generates its proxy config at runtime)
+services:
+  # ---------- REST API ----------
+  - type: web
+    name: chat-api
+    runtime: docker
+    repo: https://github.com/namankhanda2/realtime-chat-platform
+    dockerfilePath: ./api-server/Dockerfile
+    dockerContext: ./api-server
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        value: mongodb+srv://USER:PASSWORD@YOURCLUSTER.mongodb.net/chat
+        sync: false
+      - key: REDIS_URL
+        value: rediss://default:PASSWORD@YOUR-INSTANCE.upstash.io:6379
+        sync: false
+      - key: JWT_SECRET
+        value: set-a-long-random-value-in-both-services
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        value: set-a-different-long-random-value-in-both-services
+        sync: false
+      - key: ACCESS_TOKEN_TTL
+        value: "15m"
+      - key: REFRESH_TOKEN_TTL
+        value: "7d"
+
+  # ---------- WebSocket server ----------
+  - type: web
+    name: chat-ws
+    runtime: docker
+    repo: https://github.com/namankhanda2/realtime-chat-platform
+    dockerfilePath: ./ws-server/Dockerfile
+    dockerContext: ./ws-server
+    envVars:
+      - key: PORT
+        value: 5001
+      - key: MONGODB_URI
+        value: mongodb+srv://USER:PASSWORD@YOURCLUSTER.mongodb.net/chat
+        sync: false
+      - key: REDIS_URL
+        value: rediss://default:PASSWORD@YOUR-INSTANCE.upstash.io:6379
+        sync: false
+      - key: JWT_SECRET
+        value: set-a-long-random-value-in-both-services
+        sync: false
+      - key: REDIS_ADAPTER
+        value: "false"
+
+  # ---------- React client (nginx static + proxy) ----------
+  - type: web
+    name: chat-client
+    runtime: docker
+    repo: https://github.com/namankhanda2/realtime-chat-platform
+    dockerfilePath: ./client/Dockerfile
+    dockerContext: ./client
+    envVars:
+      - key: API_URL
+        value: https://REPLACE-chat-api.onrender.com
+        sync: false
+      - key: WS_URL
+        value: https://REPLACE-chat-ws.onrender.com
+        sync: false
